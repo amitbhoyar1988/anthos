@@ -1,0 +1,28 @@
+#####  POD ROLE FOR SERVICE DISCOVERY
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-svc-discovery
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","list"]
+
+---
+
+#####  POD ROLE BINDING FOR SERVICE DISCOVERY
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pod-svc-discovery-rb
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pod-svc-discovery
+subjects:
+- kind: ServiceAccount
+  name: default

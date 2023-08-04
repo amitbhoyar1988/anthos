@@ -1,0 +1,195 @@
+##################### DEPLOYMENT #####################
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identityserver
+  labels:
+    app: identityserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identityserver
+  template:
+    metadata:
+      labels:
+        app: identityserver
+    spec:
+      containers:
+      - name: identityserver
+        image: 212135574379.dkr.ecr.eu-central-1.amazonaws.com/neuro-qa/identityserver:latest
+        imagePullPolicy: Always
+        env:
+        - name: IDENTITY_DETAILS
+          value: '[{"_id":"63ac49a0c1b6df81d1528014","reference_ticket_no":null,"tenant_sow_id":null,"tenant_name":"Neuro Release Tenant One","tenant_business_name":"Neuro Release Tenant One","tenant_poc":null,"tenant_email":null,"tenant_logo_id":null,"tenant_subscriptions":[{"module_name":"Ingestion","module_code":"ingestion","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":1,"deployed":true},{"module_name":"Extraction","module_code":"extraction","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":2,"deployed":true},{"module_name":"Process workflow","module_code":"processworkflow","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":8,"deployed":true},{"module_name":"Calendar","module_code":"calendar","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":13,"deployed":true},{"module_name":"Neuro Functions","module_code":"neurofunctions","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":19,"deployed":true}],"tenant_account_key":"nreltenantone","tenant_db_storage":"private","tenant_db_server":"dzfXHoNVOrvXu62zTqoBamCh/a4ZVvkvEovbmFrIVqgadgbg8dtU50UCawb/GpQqpgbPbh8FIjumpy8CAdqYA//cJ7Ya48n7+IP751FAJa8=","tenant_db_params":"retryWrites=true&w=majority&ssl=true","tenant_authentication_mode":"custom","tenant_authentication_details":{"tenant_admin_email":"ashvin.sonwal@cognizant.com","tenant_admin_access_key":"tenantadmin","tenant_admin_secret_key":"$2b$12$vZUnEG0AD7jcitVzEPFIQuBDJqRsa0gzrmPj5RFOuY54A0xUaqZVS"},"tenant_mq_server":"k2861av6kCQ6yC2TmMch4OUnRbvb6f6xjq2QWi2QeqN77e4iVHtvl5pFpRQ6xaB6srYmcd5ABzCWOZsS4ogRug==","tenant_file_server":null,"tenant_enabled":true,"tenant_status":"deployed","tenant_onboarding_datetime":"2022-12-28T13:50:24.594Z","tenant_sub_dns":"nreltenantone","created_at":"2022-12-28T13:50:24.594Z","created_by":"sysadmin","pipeline":{"pipeline_agent":"kafka","pipeline_server":"QvPJRiS9OuJK0fnvTHcBai5jPU6ZvgvL3b7IewbWtO5Ncv81+a9oynSiMwz49SaTzZgOEItXTk61FQ2IXYrgzQ==","pipeline_server_params":"","pipeline_server_meta":"QvPJRiS9OuJK0fnvTHcBalNIUfYZq1EPtOtR8AMGk8Waji3yq5WFvSKW7LMyux74NutC3d+76jy0HwDjG+7+Ag==","pipeline_server_meta_params":"","pipeline_stats_server":"QvPJRiS9OuJK0fnvTHcBatd2VQN5WWqgSG9rgROl01Hlf1BH9gtjdxJbTJHaqXjSJgjUOdW9sH5zl9yq9iOStg==","pipeline_stats_server_params":""},"email":{"protocol":"smtp","host":"email-smtp.eu-central-1.amazonaws.com","port":"587","user_id":"AKIATCZCD7NVWSWHHSVL","password":"zIkPm3u7bb1sUi19adb0z34VJRNqhS7v/w0xdONu5530pvxvODpU5EpiSCPibqkn","ssl":true,"email_from":"no-reply@release.cognizantneuro.com"},"deployment_details":{"environment_name":"aws-neuro-release","cloud_provider":"aws","provider_parameter_details":[{"param_name":"Instance_Type","param_value":"t3.xlarge"},{"param_name":"Deployment_Regions","param_value":"eu-west-3"},{"param_name":"Node_Count","param_value":1},{"param_name":"Disk_Space","param_value":64}],"container_registry":[{"param_name":"reg_provider","param_value":"aws"},{"param_name":"reg_server","param_value":"212135574379.dkr.ecr.eu-central-1.amazonaws.com"},{"param_name":"reg_namespace","param_value":"release"},{"param_name":"reg_username","param_value":"AWS"},{"param_name":"reg_password","param_value":"$(aws ecr get-login-password)"},{"param_name":"reg_access_key","param_value":"AKIATCZCD7NV6TJQW6N7"},{"param_name":"reg_secret_key","param_value":"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"}],"container_registry_provider":"aws"},"tenant_published":true,"updated_at":"2023-05-04T14:41:07.419Z","updated_by":"sysadmin"}]'
+        - name: API_BASE_URL
+          value: 'apirelease.cognizantneuro.com'
+        ports:
+        - containerPort: 3500
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-storage-claim
+      imagePullSecrets:
+        - name: aws-registry-secret
+
+##################### SERVICE #####################
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: identityserver-service
+  labels:
+    app: identityserver
+    kubserviceregistry: Identity
+spec:
+  selector:
+    app: identityserver
+  ports:
+    - protocol: TCP
+      port: 3500
+      targetPort: 3500
+
+##################### INGRESS #####################
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: identityserver
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+      #nginx.ingress.kubernetes.io/whitelist-source-range: 13.38.132.0/22, 13.38.140.0/23, 15.236.80.0/23, 35.181.128.0/24
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: identityserver-service
+            port:
+              number: 3500
+        path: /identity/(.*)
+        pathType: Prefix
+
+---
+
+##################### DEPLOYMENT #####################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emailservice
+  labels:
+    app: emailservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: emailservice
+  template:
+    metadata:
+      labels:
+        app: emailservice
+    spec:
+      containers:
+      - name: emailservice
+        image: 212135574379.dkr.ecr.eu-central-1.amazonaws.com/neuro-qa/emailservice:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3501
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-storage-claim
+      imagePullSecrets:
+        - name: aws-registry-secret
+
+##################### SERVICE #####################
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: emailservice-service
+  labels:
+    app: emailservice
+    kubserviceregistry: Email
+spec:
+  selector:
+    app: emailservice
+  ports:
+    - protocol: TCP
+      port: 3501
+      targetPort: 3501
+
+##################### INGRESS #####################
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: emailservice
+  annotations:
+   nginx.ingress.kubernetes.io/proxy-body-size: "0"
+   nginx.ingress.kubernetes.io/rewrite-target: /$1
+     # nginx.ingress.kubernetes.io/whitelist-source-range: 13.38.132.0/22, 13.38.140.0/23, 15.236.80.0/23, 35.181.128.0/24
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: emailservice-service
+            port:
+              number: 3501
+        path: /email/(.*)
+        pathType: Prefix
+
+
+##################### EMAIL JOB #####################
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emailjob
+  labels:
+    app: emailjob
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: emailjob
+  template:
+    metadata:
+      labels:
+        app: emailjob
+    spec:
+      containers:
+      - name: emailjob
+        image: 212135574379.dkr.ecr.eu-central-1.amazonaws.com/neuro-qa/emailjob:latest
+        imagePullPolicy: Always
+        env:
+        - name: TENANTACCOUNTKEY
+          value: gcp
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-storage-claim
+      imagePullSecrets:
+        - name: aws-registry-secret
+

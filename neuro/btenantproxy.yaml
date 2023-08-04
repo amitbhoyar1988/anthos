@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: tenantproxy
+  name: tenantproxy
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tenantproxy
+  template:
+    metadata:
+      labels:
+        app: tenantproxy
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - tenantproxy
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - env:
+        - name: PRIMARYCLUSTERSUBDOMAIN
+          value: DEPRICATED
+        - name: PRIMARYCLUSTERTENANTURL
+          value: DEPRICATED
+        - name: TENANTDETAILS
+          value: '[{"_id":{"$oid":"64cb51329367f1d29d3cdeb6"},"reference_ticket_no":null,"tenant_sow_id":null,"tenant_name":"gcp","tenant_business_name":null,"tenant_poc":null,"tenant_email":null,"tenant_logo_id":null,"tenant_subscriptions":[{"module_name":"Ingestion","module_code":"ingestion","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":1},{"module_name":"Extraction","module_code":"extraction","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":2},{"module_name":"Native Engine","module_code":"nativeengine","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":3},{"module_name":"Validation","module_code":"validation","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":4}],"tenant_account_key":"gcp","tenant_db_storage":"private","tenant_db_server":"bnpgE0Iqvv2bjX31mORs0DQVt2huJDt5RuF49ZHz1G0=","tenant_db_params":"","tenant_authentication_mode":"custom","tenant_authentication_details":{"tenant_admin_email":"amit.bhoyar@cognizant.com","tenant_admin_access_key":"tenantadmin","tenant_admin_secret_key":"$2b$12$Pze6iftWbd7yt2u6W/HNAuGP8SqIUOcQjNozFVJ6L35MtVoLmcbwa"},"tenant_mq_server":"","tenant_file_server":null,"tenant_enabled":true,"tenant_status":"notdeployed","tenant_onboarding_datetime":{"$date":"2023-08-03T07:03:14.526Z"},"tenant_sub_dns":"gcp","created_at":{"$date":"2023-08-03T07:03:14.526Z"},"created_by":"sysadmin","pipeline":{"pipeline_agent":"kafka","pipeline_server":"","pipeline_server_params":"","pipeline_server_meta":"","pipeline_server_meta_params":"","pipeline_stats_server":"","pipeline_stats_server_params":""},"email":{"protocol":"imap","host":null,"port":null,"user_id":null,"password":"","ssl":null,"email_from":null}}]'
+        image: 212135574379.dkr.ecr.eu-central-1.amazonaws.com/neuro-qa/tenantproxy:latest
+        imagePullPolicy: Always
+        name: tenantproxy
+        ports:
+        - containerPort: 8999
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /mnt
+          name: efs-storage
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-storage-claim
+      imagePullSecrets:
+        - name: aws-registry-secret
+
+##################### SERVICE #####################
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenantproxy-service
+  labels:
+    app: tenantproxy
+    kubserviceregistry: TenantProxy
+spec:
+  selector:
+    app: tenantproxy
+  ports:
+    - protocol: TCP
+      port: 8999
+      targetPort: 8999
+
+##################### INGRESS #####################
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tenantproxy
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: tenantproxy-service
+            port:
+              number: 8999
+        path: /tenantproxy/(.*)
+        pathType: Prefix
+
+
+
