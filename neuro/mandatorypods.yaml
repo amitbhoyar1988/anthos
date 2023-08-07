@@ -599,7 +599,7 @@ roleRef:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: docker-config
+  name: docker-config1
 data:
   config.json: |-
     { "credsStore": "ecr-login" }
