@@ -9,7 +9,7 @@ spec:
   - ReadWriteMany
   nfs:
     path: /pvstorage1
-    server: 10.186.30.170
+    server: 10.84.60.170
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
