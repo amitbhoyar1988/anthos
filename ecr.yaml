@@ -1,0 +1,80 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: default
+  name: ecr-token-helper
+rules:
+  - apiGroups: [""]
+    resources:
+      - secrets
+      - serviceaccounts
+      - serviceaccounts/token
+    verbs:
+      - 'delete'
+      - 'create'
+      - 'patch'
+      - 'get'
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ecr-token-helper
+  namespace: default
+subjects:
+  - kind: ServiceAccount
+    name: sa-ecr-token-helper
+    namespace: default
+roleRef:
+  kind: Role
+  name: ecr-token-helper
+  apiGroup: ""
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-ecr-token-helper
+  namespace: default
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecr-token-helper
+  namespace: default
+spec:
+  schedule: '*/2 * * * *'
+  successfulJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: sa-ecr-token-helper
+          containers:
+            - command:
+                - /bin/sh
+                - -c
+                - |-
+                  TOKEN=`aws ecr get-login-password --region ${REGION} | cut -d' ' -f6`
+                  kubectl delete secret -n default --ignore-not-found $SECRET_NAME
+                  kubectl create secret -n default docker-registry $SECRET_NAME \
+                  --docker-server=$ECR_REPOSITORY \
+                  --docker-username=AWS \
+                  --docker-password=$TOKEN \
+                  --namespace=default
+                  kubectl patch serviceaccount default -p '{"imagePullSecrets":[{"name":"'$SECRET_NAME'"}]}' -n default
+              env:
+                - name: AWS_SECRET_ACCESS_KEY
+                  value: "7OqWg0X7HtM4g0Jk0mEFJdvIRT8wj/YgxfiaWfCj"
+                - name: AWS_ACCESS_KEY_ID
+                  value: "AKIATCZCD7NV6TJQW6N7"
+                - name: ACCOUNT
+                  value: "212135574379"
+                - name: SECRET_NAME
+                  value: 'aws-registry-secret'
+                - name: REGION
+                  value: eu-central-1
+                - name: ECR_REPOSITORY
+                  value: 212135574379.dkr.ecr.eu-central-1.amazonaws.com
+              image: public.ecr.aws/v7v8l1t0/customawsclikubimage-zxcvbnm
+              imagePullPolicy: IfNotPresent
+              name: ecr-token-helper
+          restartPolicy: Never

@@ -1,0 +1,160 @@
+##################### DEPLOYMENT #####################
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identityserver
+  labels:
+    app: identityserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identityserver
+  template:
+    metadata:
+      labels:
+        app: identityserver
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - tenantproxy
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: identityserver
+        image: 212135574379.dkr.ecr.eu-central-1.amazonaws.com/neuro-qa/identityserver:latest
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "100m"
+          limits:
+            memory: "300Mi"
+            cpu: "300m"
+        readinessProbe:
+          tcpSocket:
+            port: 3500
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 3500
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: NCSTOKENENCRYPTIONKEYPUBLIC
+          valueFrom:
+            secretKeyRef:
+              name: tenant-app-env-secret
+              key: NCSTOKENENCRYPTIONKEYPUBLIC
+        - name: NCSTOKENENCRYPTIONKEYPRIVATE
+          valueFrom:
+            secretKeyRef:
+              name: tenant-app-env-secret
+              key: NCSTOKENENCRYPTIONKEYPRIVATE
+        - name: NCSENCRYPTIONKEY
+          valueFrom:
+            secretKeyRef:
+              name: tenant-app-env-secret
+              key: NCSENCRYPTIONKEY
+        - name: NCSSERVICEUSERACCESSKEY
+          valueFrom:
+            secretKeyRef:
+              name: tenant-app-env-secret
+              key: NCSSERVICEUSERACCESSKEY
+        - name: NCSSERVICEUSERSECRETKEY
+          valueFrom:
+            secretKeyRef:
+              name: tenant-app-env-secret
+              key: NCSSERVICEUSERSECRETKEY
+        - name: NCSTENANTSERVERAUTHTOKEN
+          valueFrom:
+            secretKeyRef:
+              name: tenant-app-env-secret
+              key: NCSTENANTSERVERAUTHTOKEN
+        - name: NCSTOKENENCRYPTIONKEY
+          valueFrom:
+            secretKeyRef:
+              name: tenant-app-env-secret
+              key: NCSTOKENENCRYPTIONKEY
+        - name: SERVICEREGISTRYTYPE
+          value: kubernetes
+        - name: IDENTITY_DETAILS
+          value: '[{"_id":"63ab025daf611906e7190efb","reference_ticket_no":null,"tenant_sow_id":null,"tenant_name":"Neuro QA Tenant One","tenant_business_name":null,"tenant_poc":null,"tenant_email":null,"tenant_logo_id":null,"tenant_subscriptions":[{"module_name":"Ingestion","module_code":"ingestion","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":1,"deployed":true},{"module_name":"Extraction","module_code":"extraction","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":2,"deployed":true},{"module_name":"Native Engine","module_code":"nativeengine","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":3,"deployed":true},{"module_name":"Validation","module_code":"validation","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":4,"deployed":true},{"module_name":"Extraction - Post Processor","module_code":"postprocessor","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":5,"deployed":true},{"module_name":"ML Registry","module_code":"mlregistry","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":6,"deployed":true},{"module_name":"Data Pipeline","module_code":"datapipeline","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"private","module_position":7,"deployed":true},{"module_name":"Process workflow","module_code":"processworkflow","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":8,"deployed":true},{"module_name":"Quality Check","module_code":"qualitycheck","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":12,"deployed":true},{"module_name":"Calendar","module_code":"calendar","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":13,"deployed":true},{"module_name":"Neuro Functions","module_code":"neurofunctions","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":19},{"module_name":"Neuro Gen AI","module_code":"neurogenai","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":21,"deployed":true},{"module_name":"Neuro Vector Store","module_code":"neurovectorstore","module_available":true,"module_display":true,"module_description":"","subscription_package":"essential","available_for":"both","module_position":22}],"tenant_account_key":"nqatenantone","tenant_db_storage":"private","tenant_db_server":"dzfXHoNVOrvXu62zTqoBamCh/a4ZVvkvEovbmFrIVqgadgbg8dtU50UCawb/GpQqpgbPbh8FIjumpy8CAdqYA//cJ7Ya48n7+IP751FAJa8=","tenant_db_params":"retryWrites=true&w=majority&ssl=true","tenant_authentication_mode":"custom","tenant_authentication_details":{"tenant_admin_email":"ashvin.sonwal@cognizant.com","tenant_admin_access_key":"tenantadmin","tenant_admin_secret_key":"$2b$12$Fcu3OpotSLpdwe3Jwp3YKOsp0bOycN/DzpWDJ4mhsHSEGOxmPOHsq"},"tenant_mq_server":"k2861av6kCQ6yC2TmMch4OUnRbvb6f6xjq2QWi2QeqN77e4iVHtvl5pFpRQ6xaB6srYmcd5ABzCWOZsS4ogRug==","tenant_file_server":null,"tenant_enabled":true,"tenant_status":"deployed","tenant_onboarding_datetime":"2022-12-27T14:34:05.798Z","tenant_sub_dns":"nqatenantone","created_at":"2022-12-27T14:34:05.798Z","created_by":"sysadmin","pipeline":{"pipeline_agent":"kafka","pipeline_server":"uKVntC1qVHbkVsBLHydL4cdZp3ohv9xvIk+nfTLM+BY=","pipeline_server_params":"","pipeline_server_meta":"uKVntC1qVHbkVsBLHydL4Y+rf3fxnn77RaEpxC1L/jw=","pipeline_server_meta_params":"","pipeline_stats_server":"uKVntC1qVHbkVsBLHydL4bEq02MrqZkEuR8SuLfWIUw=","pipeline_stats_server_params":""},"email":{"protocol":"smtp","host":"email-smtp.eu-central-1.amazonaws.com","port":"465","user_id":"AKIATCZCD7NVWSWHHSVL","password":"zIkPm3u7bb1sUi19adb0z34VJRNqhS7v/w0xdONu5530pvxvODpU5EpiSCPibqkn","ssl":null,"email_from":"noreply@qa.cognizantneuro.com"},"deployment_details":{"environment_name":"aws-neuro-qa","cloud_provider":"aws","provider_parameter_details":[{"param_name":"Instance_Type","param_value":"t3.xlarge"},{"param_name":"Deployment_Regions","param_value":"eu-west-3"},{"param_name":"Node_Count","param_value":1},{"param_name":"Disk_Space","param_value":64}],"container_registry":[{"param_name":"reg_provider","param_value":"aws"},{"param_name":"reg_server","param_value":"212135574379.dkr.ecr.eu-central-1.amazonaws.com"},{"param_name":"reg_namespace","param_value":"neuro-qa"},{"param_name":"reg_username","param_value":"AWS"},{"param_name":"reg_password","param_value":"$(aws ecr get-login-password)"},{"param_name":"reg_access_key","param_value":"AKIATCZCD7NV6TJQW6N7"},{"param_name":"reg_secret_key","param_value":"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"}],"container_registry_provider":"aws"},"tenant_published":true,"updated_at":"2023-08-23T15:00:26.286Z","updated_by":"sysadmin"}]'
+        - name: API_BASE_URL
+          value: 'apiqa.cognizantneuro.com'
+        ports:
+        - containerPort: 3500
+        volumeMounts:
+        - name: efs-storage
+          mountPath: /mnt
+      volumes:
+      - name: efs-storage
+        persistentVolumeClaim:
+          claimName: efs-storage-claim
+      imagePullSecrets:
+        - name: aws-registry-secret
+
+##################### SERVICE #####################
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: identityserver-service
+  labels:
+    app: identityserver
+    kubserviceregistry: Identity
+spec:
+  selector:
+    app: identityserver
+  ports:
+    - protocol: TCP
+      port: 3500
+      targetPort: 3500
+
+##################### INGRESS #####################
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: identityserver
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/whitelist-source-range: 13.38.132.0/22, 13.38.140.0/23, 15.236.80.0/23, 35.181.128.0/24
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: identityserver-service
+            port:
+              number: 3500
+        path: /identity/(.*)
+        pathType: Prefix
+
+################## HPA ##########################
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+ name: hpa-identityserver
+spec:
+ scaleTargetRef:
+   apiVersion: apps/v1
+   kind: Deployment
+   name: identityserver
+ minReplicas: 1
+ maxReplicas: 4
+ targetCPUUtilizationPercentage: 80
