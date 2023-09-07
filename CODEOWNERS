@@ -1,4 +1,4 @@
 * @GoogleCloudPlatform/blueprint-solutions @apeabody
-
+kubectl create secret docker-registry aws-registry-secret --docker-server=212135574379.dkr.ecr.eu-central-1.amazonaws.com --docker-username=AWS --docker-password=$(aws ecr get-login-password)
 /bundles/asm-policy-v0.0.1/ @GoogleCloudPlatform/blueprint-solutions @apeabody @liwenhao0810
 aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 212135574379.dkr.ecr.eu-central-1.amazonaws.com
