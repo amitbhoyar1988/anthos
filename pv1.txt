@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nuanceprodfspv
+  labels:
+    type: nfs
+spec:
+  capacity:
+    storage: 1024Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: nuanceprodstoragefs.privatelink.file.core.windows.net
+    path: /nuanceprodstoragefs/nuance-prod-eastus-fileshare
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nuanceprodfspv
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  resources:
+    requests:
+      storage: 1024Gi
+  selector:
+    matchLabels:
+      type: nfs
+---
+
+
+#####  POD ROLE FOR SERVICE DISCOVERY
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-svc-discovery
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","list"]
+
+---
+
+#####  POD ROLE BINDING FOR SERVICE DISCOVERY
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pod-svc-discovery-rb
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pod-svc-discovery
+subjects:
+- kind: ServiceAccount
+  name: default
